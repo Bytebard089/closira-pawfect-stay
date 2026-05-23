@@ -1,0 +1,151 @@
+{
+  "business_name": "Pawfect Stay Pet Hotel & Grooming",
+  "tagline": "Where your pet is family",
+  "location": "12 Maple Lane, Austin, Texas",
+  "hours": {
+    "monday_to_friday": "7:00 AM to 8:00 PM",
+    "saturday": "8:00 AM to 6:00 PM",
+    "sunday": "10:00 AM to 4:00 PM (drop-off and pick-up only)",
+    "holidays": "Open on most public holidays — call ahead to confirm"
+  },
+  "contact": {
+    "phone": "512-874-3391",
+    "whatsapp": "512-874-3391",
+    "email": "hello@pawfectstay.com",
+    "booking": "Via phone, WhatsApp, or website at pawfectstay.com"
+  },
+  "services": [
+    {
+      "name": "Overnight Boarding (Dogs)",
+      "price_per_night": 45,
+      "currency": "USD",
+      "details": "Private climate-controlled suites, 3 supervised outdoor play sessions daily, bedtime tuck-in, and a goodnight treat."
+    },
+    {
+      "name": "Overnight Boarding (Cats)",
+      "price_per_night": 30,
+      "currency": "USD",
+      "details": "Quiet, separate cat wing. Perch windows, cozy beds, and individual playtime with staff twice daily."
+    },
+    {
+      "name": "Doggy Daycare (Full Day)",
+      "price": 28,
+      "currency": "USD",
+      "details": "7 AM to 7 PM. Supervised group play sorted by size and temperament. Midday nap time included. Perfect for working owners."
+    },
+    {
+      "name": "Doggy Daycare (Half Day)",
+      "price": 18,
+      "currency": "USD",
+      "details": "Any 4-hour block within business hours. Drop-off or pick-up flexible."
+    },
+    {
+      "name": "Bath & Brush (Small dog under 25 lbs)",
+      "price": 35,
+      "currency": "USD",
+      "details": "Shampoo, blow-dry, brush-out, ear cleaning, nail trim, and bandana."
+    },
+    {
+      "name": "Bath & Brush (Medium dog 25–60 lbs)",
+      "price": 50,
+      "currency": "USD",
+      "details": "Same as small package. Pricing reflects coat size."
+    },
+    {
+      "name": "Bath & Brush (Large dog over 60 lbs)",
+      "price": 65,
+      "currency": "USD",
+      "details": "Same as small package. May take up to 2.5 hours for large double-coated breeds."
+    },
+    {
+      "name": "Full Grooming (haircut + bath)",
+      "price_from": 55,
+      "currency": "USD",
+      "details": "Breed-specific haircut, bath, brush-out, nail trim, ear cleaning, and spritz. Price varies by breed and coat condition."
+    },
+    {
+      "name": "Cat Grooming",
+      "price_from": 50,
+      "currency": "USD",
+      "details": "Lion cut or sanitary trim, bath if tolerated, nail trim. By appointment only — Tuesdays and Thursdays."
+    },
+    {
+      "name": "Puppy's First Groom",
+      "price": 30,
+      "currency": "USD",
+      "details": "Gentle introduction groom for puppies under 6 months. Focus on positive experience — short session, lots of treats, certificate of bravery included!"
+    },
+    {
+      "name": "Nail Trim Only",
+      "price": 12,
+      "currency": "USD",
+      "details": "Walk-in welcome for nail trims Mon–Fri 9 AM to 5 PM. No appointment needed."
+    },
+    {
+      "name": "Teeth Brushing Add-on",
+      "price": 10,
+      "currency": "USD",
+      "details": "Add to any grooming or daycare service."
+    },
+    {
+      "name": "Puppy Socialisation Classes",
+      "price_per_session": 20,
+      "sessions_in_package": 4,
+      "package_price": 70,
+      "currency": "USD",
+      "details": "Weekly group classes for puppies 8–16 weeks. Covers basic commands, socialisation, and leash manners. Max 6 puppies per class. Held Saturday mornings at 9 AM."
+    }
+  ],
+  "policies": {
+    "vaccination_requirements": "All dogs must be up to date on Rabies, DHPP (Distemper/Parvo), and Bordetella. Cats must have Rabies and FVRCP. Proof required at first visit.",
+    "cancellation_policy": "24-hour notice for daycare. 48-hour notice for boarding. Late cancellations may incur a 50% charge.",
+    "check_in_checkout": {
+      "boarding_checkin": "Any time during business hours on arrival day",
+      "boarding_checkout": "By 11 AM on departure day to avoid a half-day daycare charge",
+      "daycare_checkin": "By 10 AM for full-day daycare"
+    },
+    "what_to_bring_boarding": "Food (portioned per meal in labelled bags), any medications, one item from home like a blanket or toy. We provide bedding, but a familiar scent helps nervous pets.",
+    "aggressive_animals": "We reserve the right to refuse boarding or grooming for animals showing aggression. Safety of all animals and staff is the top priority.",
+    "flea_policy": "Any animal found to have fleas will receive a flea treatment at the owner's expense ($20) before joining the facility."
+  },
+  "frequently_asked_questions": [
+    {
+      "question": "Is there a meet and greet before boarding?",
+      "answer": "Yes! We strongly recommend a free 30-minute meet and greet for first-time boarders so your pet can explore the space and we can learn their routine."
+    },
+    {
+      "question": "Do you send updates while my pet is staying?",
+      "answer": "Absolutely. We send at least one photo update per day via WhatsApp for boarding pets, and post group daycare photos to our Instagram daily."
+    },
+    {
+      "question": "Can I bring my pet's own food?",
+      "answer": "Yes, and we actually prefer it. Keeping the same diet avoids tummy upsets. Please portion meals in labelled zip-lock bags."
+    },
+    {
+      "question": "Do you cater to senior pets or pets with special needs?",
+      "answer": "Yes. We have experience with senior animals and can administer oral medications (tablets/liquid) at no extra charge. Please inform us at booking."
+    },
+    {
+      "question": "Are the play groups supervised?",
+      "answer": "All play sessions are fully supervised by trained staff. Dogs are grouped by size and play style, not just breed."
+    },
+    {
+      "question": "What if my pet gets sick during their stay?",
+      "answer": "We will contact you immediately. We have a vet partner (Austin Animal Clinic, 0.5 miles away) and will take your pet there if needed. You will be informed before any vet visit."
+    }
+  ],
+  "loyalty_program": {
+    "name": "Pawfect Paws Club",
+    "details": "Every 10th day of daycare is free. Every 5th grooming is 20% off. Automatic — no sign-up needed, tracked by phone number."
+  },
+  "escalation_rules": [
+    "Any question about a pet's health, injury, or medical condition",
+    "Complaints about a previous visit or staff behaviour",
+    "Requests for discounts or custom pricing beyond listed packages",
+    "Questions about incidents during a stay (injury, fight, escape)",
+    "Customer expresses frustration or anger",
+    "More than 2 questions in a row that cannot be answered from this SOP",
+    "Customer requests to speak to a manager or human",
+    "Concerns about a specific staff member"
+  ]
+}
