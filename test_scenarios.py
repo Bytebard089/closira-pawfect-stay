@@ -9,65 +9,26 @@ Usage: python test_scenarios.py
 
 import os
 import json
+import time
 import datetime
 from groq import Groq
 
-SOP_FILE       = "sop_data.json"
+from prompt import SYSTEM_PROMPT
+from utils import call_with_retry, parse_reply
+
 TRANSCRIPT_DIR = "test_transcripts"
 MODEL          = "llama-3.3-70b-versatile"
 os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-with open(SOP_FILE) as f:
-    SOP = json.load(f)
-SOP_TEXT = json.dumps(SOP, indent=2)
-
-SYSTEM_PROMPT = f"""
-You are Biscuit, a warm and knowledgeable AI assistant for Pawfect Stay Pet Hotel & Grooming in Austin, Texas.
-Your personality is friendly and reassuring — pet owners care deeply about their animals and want to feel like they're leaving them somewhere safe and loved.
-
-============================
-SOP — YOUR ONLY SOURCE OF TRUTH
-============================
-{SOP_TEXT}
-============================
-
-== CORE RULES ==
-1. Answer ONLY from the SOP above. If the answer is not in the SOP, do NOT guess or make something up.
-2. When you cannot answer, you MUST escalate. Begin your reply with:
-   ESCALATE: [specific reason]
-   Then write a warm reassurance to the customer that a team member will help them shortly.
-3. Never give medical, veterinary, or health advice about a specific animal. Always escalate.
-4. Never negotiate prices, offer unauthorised discounts, or make promises not in the SOP.
-5. If a customer mentions a specific incident (injury, fight, illness during a stay), escalate immediately.
-
-== ESCALATION TRIGGERS ==
-- Customer is angry, upset, or uses frustrated language
-- Medical, veterinary, or health question about a specific animal
-- Incident during a past or current stay mentioned
-- Custom price or discount requested
-- 2+ questions in a row not answerable from SOP
-- Explicit request for manager or human
-- Formal complaint
-
-== LEAD QUALIFICATION ==
-When a customer shows interest in booking, ask ONE AT A TIME:
-  Q1: "What's your pet's name, and what kind of animal are they?"
-  Q2: "What service are you thinking of — boarding, daycare, or grooming?"
-  Q3: "Is this your first time visiting us, or have you been before?"
-
-== TONE ==
-- Warm, friendly, reassuring — like a trusted pet-sitter
-- Short messages (2-5 sentences)
-- Use the pet's name once you know it
-- Never say corporate phrases like "As per our SOP"
-"""
-
 
 def simulate(name: str, turns: list) -> str:
-    messages = []
-    lines    = []
+    messages          = []
+    lines             = []
+    escalated         = False
+    escalation_reason = ""
+
     lines.append(f"# Test Scenario: {name}")
     lines.append(f"Date: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
     lines.append("=" * 60)
@@ -80,35 +41,43 @@ def simulate(name: str, turns: list) -> str:
     lines.append("")
     messages.append({"role": "assistant", "content": opening})
 
-    escalated         = False
-    escalation_reason = ""
-
     for turn in turns:
         if turn["role"] != "user":
             continue
+
         content = turn["content"]
         lines.append(f"**Customer:** {content}")
         messages.append({"role": "user", "content": content})
 
-        resp = client.chat.completions.create(
-            model       = MODEL,
-            max_tokens  = 500,
-            temperature = 0.4,
-            messages    = [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
+        resp, err = call_with_retry(
+            lambda: client.chat.completions.create(
+                model       = MODEL,
+                max_tokens  = 500,
+                temperature = 0.4,
+                messages    = [{"role": "system", "content": SYSTEM_PROMPT}] + messages,
+            )
         )
-        reply = resp.choices[0].message.content.strip()
-        messages.append({"role": "assistant", "content": reply})
-        lines.append(f"**Biscuit:** {reply}")
+
+        if err:
+            raw = "ESCALATE: API error\nI'm having trouble connecting right now — a team member will be in touch shortly."
+        else:
+            raw = resp.choices[0].message.content.strip()
+
+        # ── Always parse — never write raw reply to transcript ──
+        is_escalation, reason, clean_reply = parse_reply(raw)
+
+        messages.append({"role": "assistant", "content": clean_reply})
+        lines.append(f"**Biscuit:** {clean_reply}")
         lines.append("")
 
-        if reply.upper().startswith("ESCALATE:"):
+        if is_escalation:
             escalated         = True
-            escalation_reason = reply.split("\n")[0].replace("ESCALATE:", "").strip()
-            lines.append(f"> **[SYSTEM]** Escalation triggered — {escalation_reason}")
+            escalation_reason = reason
+            lines.append(f"> **[SYSTEM]** Escalation flagged — {reason}")
             lines.append("")
             break
 
-    # Summary call
+    # ── Summary ──
     summary_prompt = f"""
 Review this Pawfect Stay support conversation and write a structured summary.
 
@@ -132,18 +101,24 @@ Use exactly these sections:
 ## Escalation Status
 [Status + reason, or "No escalation required"]
 
+## Confidence Signal
+[Any turns where the AI was uncertain, or "All turns handled confidently"]
+
 ## Recommended Next Action
 [Specific next step for the team]
 """
-    sr = client.chat.completions.create(
-        model      = MODEL,
-        max_tokens = 500,
-        messages   = [
-            {"role": "system", "content": "You are a helpful business analyst."},
-            {"role": "user",   "content": summary_prompt},
-        ],
+    sr, err = call_with_retry(
+        lambda: client.chat.completions.create(
+            model      = MODEL,
+            max_tokens = 500,
+            messages   = [
+                {"role": "system", "content": "You are a helpful business analyst."},
+                {"role": "user",   "content": summary_prompt},
+            ],
+        )
     )
-    summary = sr.choices[0].message.content.strip()
+    summary = sr.choices[0].message.content.strip() if not err else "Summary unavailable."
+
     lines.append("")
     lines.append("---")
     lines.append("## Session Summary")
@@ -186,7 +161,7 @@ SCENARIOS = [
         "name":     "Scenario 4 — Lead Qualification",
         "turns": [
             {"role": "user", "content": "Hey, I'm going on holiday for 10 days in July and need someone to look after my dog. Do you do long stays?"},
-            {"role": "user", "content": "Her name is Luna, she's a 3-year-old Golden Retriever."},
+            {"role": "user", "content": "Her name is luna, she's a 3-year-old golden retriever."},
             {"role": "user", "content": "This would be our first time — I've never left her anywhere before and I'm honestly a bit nervous about it."},
             {"role": "user", "content": "She's a pretty social dog, loves other dogs. Would she be in a group setting?"},
             {"role": "user", "content": "Okay, that sounds great. What's the nightly rate and what do I need to bring?"},
@@ -197,7 +172,7 @@ SCENARIOS = [
         "name":     "Scenario 5 — Full Conversation with Summary",
         "turns": [
             {"role": "user", "content": "Hi! My name is James. I saw you on Google Maps and I'm wondering about grooming for my cat."},
-            {"role": "user", "content": "He's a 4-year-old Persian, named Mochi. His coat gets really matted."},
+            {"role": "user", "content": "He's a 4-year-old Persian, named mochi. His coat gets really matted."},
             {"role": "user", "content": "How much would a full groom cost and how long does it take?"},
             {"role": "user", "content": "Is there anything special I need to prepare before bringing him in?"},
             {"role": "user", "content": "Perfect. When can I book him in? And do you need proof of his vaccinations?"},
