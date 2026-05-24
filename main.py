@@ -22,14 +22,7 @@ from typing import Dict, List
 from groq import Groq
 
 from prompt import SYSTEM_PROMPT
-from utils import (
-    call_with_retry,
-    parse_reply,
-    forced_escalation_reason,
-    FORCED_ESCALATION_MESSAGE,
-    lock_file,
-    unlock_file,
-)
+from utils import call_with_retry, parse_reply, lock_file, unlock_file
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 LOG_DIR = "logs"
@@ -55,7 +48,6 @@ class ConversationState:
         self.messages              = []
         self.stage                 = "faq"
         self.lead_data             = {}
-        self.escalated             = False
         self.escalation_notice_count = 0     # How many escalation notices we've shown
         self.escalation_reasons    = []      # All escalations this session
         self.sop_gaps              = []      # Only genuine out-of-SOP topics
@@ -109,15 +101,6 @@ def get_response(state: ConversationState, user_input: str) -> str:
     # Strip ESCALATE line — customer never sees it
     escalated, reason, clean_reply = parse_reply(raw_reply)
 
-    # Force escalation for known out-of-scope topics if the model did not
-    # follow the rule (keeps live behavior consistent with transcripts).
-    if not escalated:
-        forced_reason = forced_escalation_reason(user_input)
-        if forced_reason:
-            escalated = True
-            reason = forced_reason
-            clean_reply = FORCED_ESCALATION_MESSAGE
-
     # Store only the clean reply in history
     state.add("assistant", clean_reply)
 
@@ -133,9 +116,6 @@ def get_response(state: ConversationState, user_input: str) -> str:
         if any(s in reason.lower() for s in sop_gap_signals):
             state.unanswered_count += 1
             state.sop_gaps.append(user_input[:100])
-
-        # Mark escalated for this turn (notice shown once per NEW escalation)
-        state.escalated = True
 
     # Booking intent → qualification (only if not already in qualification)
     booking_pattern = re.compile(
@@ -302,9 +282,8 @@ def run(demo: bool = False) -> None:
         print(f"\nBiscuit: {reply}\n")
 
         # ── Show escalation notice once per new escalation reason ──
-        if state.escalated and len(state.escalation_reasons) > state.escalation_notice_count:
+        if len(state.escalation_reasons) > state.escalation_notice_count:
             state.escalation_notice_count = len(state.escalation_reasons)
-            state.escalated = False   # Reset turn flag; reasons preserved in list
             print("  [NOTICE] A human team member has been notified and will follow up shortly.")
             print("           You can continue chatting with Biscuit in the meantime.\n")
 
