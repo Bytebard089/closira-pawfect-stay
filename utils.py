@@ -67,28 +67,3 @@ def lock_file(file_obj) -> None:
 def unlock_file(file_obj) -> None:
     if fcntl:
         fcntl.flock(file_obj.fileno(), fcntl.LOCK_UN)
-
-
-FORCED_ESCALATION_MESSAGE = (
-    "Thanks for asking — I don't have that information in the SOP, so I don't want to guess. "
-    "I'm flagging this for a team member who can help."
-)
-
-
-def forced_escalation_reason(user_input: str) -> str:
-    """
-    Returns a reason string when the user asks a known out-of-scope topic
-    that should always escalate, or an empty string if no match.
-    """
-    text = user_input.lower()
-
-    if "training" in text and "adult" in text:
-        return "Customer asked about adult dog training, which is not in the SOP."
-
-    if "hydrotherapy" in text or "swimming" in text:
-        return "Customer asked about hydrotherapy or swimming sessions, which are not in the SOP."
-
-    if ("anxiety" in text and "assessment" in text) or ("behavioral" in text and "assessment" in text) or ("behavioural" in text and "assessment" in text):
-        return "Customer asked about a behavioral assessment, which is not in the SOP."
-
-    return ""
