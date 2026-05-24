@@ -66,6 +66,13 @@ $env:GROQ_API_KEY="your-key-here"
 
 Get a key at: https://console.groq.com
 
+You can also copy `.env.example` to `.env` and load it in your shell:
+
+```bash
+cp .env.example .env
+export $(grep -v '^#' .env | xargs)
+```
+
 ---
 
 ## Running
@@ -82,8 +89,8 @@ Starts a real-time CLI conversation with Biscuit (the AI assistant). Type your m
 ### Option B — Run all 5 test scenarios
 
 ```bash
-# From the activated venv or using the launcher
-bash run.sh  # then in the app type: run-tests  (or run test_scenarios.py directly inside the venv)
+# From the activated venv
+python test_scenarios.py
 ```
 
 Important security note: Do NOT commit API keys to the repository or share screenshots that include them. If you exposed your `GROQ_API_KEY` (for example, in an image), revoke it immediately and generate a new key at https://console.groq.com. Add any local keys to a `.env` file (which is ignored by `.gitignore`) or set them in your shell profile.
