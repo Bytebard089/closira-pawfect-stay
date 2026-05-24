@@ -9,7 +9,6 @@ Usage: python test_scenarios.py
 
 import os
 import json
-import time
 import datetime
 from groq import Groq
 

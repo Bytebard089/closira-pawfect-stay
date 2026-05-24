@@ -29,6 +29,12 @@ LOG_DIR = "logs"
 MODEL   = "llama-3.3-70b-versatile"
 os.makedirs(LOG_DIR, exist_ok=True)
 
+BOOKING_PATTERN = re.compile(
+    r"\b(book|booking|reserve|reservation|appointment|schedule|drop\s*off|pick\s*up|"
+    r"boarding|daycare|grooming|bring\s+my\s+(dog|cat))\b",
+    re.IGNORECASE,
+)
+
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 # ── Demo conversation (used with --demo flag) ──────────────────────────────────
@@ -118,12 +124,7 @@ def get_response(state: ConversationState, user_input: str) -> str:
             state.sop_gaps.append(user_input[:100])
 
     # Booking intent → qualification (only if not already in qualification)
-    booking_pattern = re.compile(
-        r"\b(book|booking|reserve|reservation|appointment|schedule|drop\s*off|pick\s*up|"
-        r"boarding|daycare|grooming|bring\s+my\s+(dog|cat))\b",
-        re.IGNORECASE,
-    )
-    if state.stage == "faq" and booking_pattern.search(user_input):
+    if state.stage == "faq" and BOOKING_PATTERN.search(user_input):
         state.stage = "qualification"
 
     # Pet name extraction (case-insensitive, no capital letter assumption)
