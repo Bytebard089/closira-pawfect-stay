@@ -1,38 +1,27 @@
 # Virtual environment
 .venv/
+venv/
 
 # Python cache
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# Logs and runtime files
-logs/
-test_transcripts/*.py
-
-# Environment files
-.env
-
-# macOS
-.DS_Store
-
-# VS Code
-.vscode/
-# Environment
-.env
-.venv/
-venv/
-env/
-
-# Python
-__pycache__/
-*.py[cod]
+# Build artifacts
 *.egg-info/
 dist/
 build/
 
-# Logs (generated at runtime — don't commit)
+# Logs and runtime files
 logs/
 
-# OS
+# Environment files
+.env
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# VS Code
+.vscode/
