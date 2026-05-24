@@ -18,10 +18,18 @@ import json
 import time
 import datetime
 import argparse
+from typing import Dict, List
 from groq import Groq
 
 from prompt import SYSTEM_PROMPT
-from utils import call_with_retry, parse_reply
+from utils import (
+    call_with_retry,
+    parse_reply,
+    forced_escalation_reason,
+    FORCED_ESCALATION_MESSAGE,
+    lock_file,
+    unlock_file,
+)
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 LOG_DIR = "logs"
@@ -48,17 +56,17 @@ class ConversationState:
         self.stage                 = "faq"
         self.lead_data             = {}
         self.escalated             = False
-        self.escalation_shown      = False   # Track if notice already shown this session
+        self.escalation_notice_count = 0     # How many escalation notices we've shown
         self.escalation_reasons    = []      # All escalations this session
         self.sop_gaps              = []      # Only genuine out-of-SOP topics
         self.unanswered_count      = 0       # Only out-of-SOP escalations
         self.low_confidence_turns  = []      # Turn numbers where AI escalated
         self.turn_number           = 0
 
-    def add(self, role: str, content: str):
+    def add(self, role: str, content: str) -> None:
         self.messages.append({"role": role, "content": content})
 
-    def log_dict(self) -> dict:
+    def log_dict(self) -> Dict[str, object]:
         return {
             "timestamp":            datetime.datetime.now().isoformat(),
             "stage_reached":        self.stage,
@@ -72,7 +80,7 @@ class ConversationState:
         }
 
 
-def _build_messages(state: ConversationState) -> list:
+def _build_messages(state: ConversationState) -> List[Dict[str, str]]:
     return [{"role": "system", "content": SYSTEM_PROMPT}] + state.messages
 
 
@@ -101,6 +109,15 @@ def get_response(state: ConversationState, user_input: str) -> str:
     # Strip ESCALATE line — customer never sees it
     escalated, reason, clean_reply = parse_reply(raw_reply)
 
+    # Force escalation for known out-of-scope topics if the model did not
+    # follow the rule (keeps live behavior consistent with transcripts).
+    if not escalated:
+        forced_reason = forced_escalation_reason(user_input)
+        if forced_reason:
+            escalated = True
+            reason = forced_reason
+            clean_reply = FORCED_ESCALATION_MESSAGE
+
     # Store only the clean reply in history
     state.add("assistant", clean_reply)
 
@@ -121,10 +138,12 @@ def get_response(state: ConversationState, user_input: str) -> str:
         state.escalated = True
 
     # Booking intent → qualification (only if not already in qualification)
-    booking_signals = ["book", "reserve", "appointment", "schedule", "drop off",
-                       "interested in boarding", "want to board", "thinking of boarding",
-                       "thinking of bringing", "bring my dog", "bring my cat"]
-    if state.stage == "faq" and any(s in user_input.lower() for s in booking_signals):
+    booking_pattern = re.compile(
+        r"\b(book|booking|reserve|reservation|appointment|schedule|drop\s*off|pick\s*up|"
+        r"boarding|daycare|grooming|bring\s+my\s+(dog|cat))\b",
+        re.IGNORECASE,
+    )
+    if state.stage == "faq" and booking_pattern.search(user_input):
         state.stage = "qualification"
 
     # Pet name extraction (case-insensitive, no capital letter assumption)
@@ -134,7 +153,7 @@ def get_response(state: ConversationState, user_input: str) -> str:
     return clean_reply
 
 
-def _try_extract_pet_name(text: str, state: ConversationState):
+def _try_extract_pet_name(text: str, state: ConversationState) -> None:
     patterns = [
         r"(?:my (?:dog|cat|puppy|kitten|pet)(?:'s name)? is|her name is|his name is|they're called|named)\s+([a-zA-Z]+)",
         r"(?:dog|cat|puppy|kitten) called\s+([a-zA-Z]+)",
@@ -197,24 +216,36 @@ Write a structured summary with exactly these sections:
 
 
 # ── Logging ────────────────────────────────────────────────────────────────────
-def _log_escalation(state: ConversationState, trigger: str, reason: str):
+def _log_escalation(state: ConversationState, trigger: str, reason: str) -> None:
     path    = os.path.join(LOG_DIR, "escalation_log.json")
-    entries = []
-    if os.path.exists(path):
-        with open(path) as f:
-            entries = json.load(f)
-    entries.append({
+    entry = {
         "timestamp":   datetime.datetime.now().isoformat(),
         "event":       "ESCALATION",
         "trigger_msg": trigger,
         "reason":      reason,
         "turn_number": state.turn_number,
-    })
-    with open(path, "w") as f:
-        json.dump(entries, f, indent=2)
+    }
+
+    if os.path.exists(path):
+        with open(path, "r+") as f:
+            lock_file(f)
+            try:
+                try:
+                    entries = json.load(f)
+                except json.JSONDecodeError:
+                    entries = []
+                entries.append(entry)
+                f.seek(0)
+                f.truncate()
+                json.dump(entries, f, indent=2)
+            finally:
+                unlock_file(f)
+    else:
+        with open(path, "w") as f:
+            json.dump([entry], f, indent=2)
 
 
-def save_session(state: ConversationState, summary: str):
+def save_session(state: ConversationState, summary: str) -> None:
     ts   = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     path = os.path.join(LOG_DIR, f"session_{ts}.json")
     with open(path, "w") as f:
@@ -225,7 +256,7 @@ def save_session(state: ConversationState, summary: str):
 
 
 # ── CLI Chat Loop ──────────────────────────────────────────────────────────────
-def run(demo: bool = False):
+def run(demo: bool = False) -> None:
     print("\n" + "=" * 62)
     print("  Pawfect Stay — AI Customer Support (powered by Closira)")
     if demo:
@@ -270,10 +301,10 @@ def run(demo: bool = False):
         reply = get_response(state, user_input)
         print(f"\nBiscuit: {reply}\n")
 
-        # ── Show escalation notice once per session ──
-        if state.escalated and not state.escalation_shown:
-            state.escalation_shown = True
-            state.escalated        = False   # Reset turn flag; reasons preserved in list
+        # ── Show escalation notice once per new escalation reason ──
+        if state.escalated and len(state.escalation_reasons) > state.escalation_notice_count:
+            state.escalation_notice_count = len(state.escalation_reasons)
+            state.escalated = False   # Reset turn flag; reasons preserved in list
             print("  [NOTICE] A human team member has been notified and will follow up shortly.")
             print("           You can continue chatting with Biscuit in the meantime.\n")
 
