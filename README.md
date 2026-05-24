@@ -1,5 +1,4 @@
-# Closira AI Agent — Pawfect Stay Pet Hotel & Grooming
-### AI Engineering Intern Assignment
+# Closira AI Agent — Pawfect Stay
 
 A Python-based, four-stage AI customer support workflow built on the Groq API (llama-3.3-70b-versatile). It handles realistic inbound customer conversations for a fictional pet hotel business — answering questions strictly from an SOP, qualifying leads, detecting escalation triggers, and producing structured session summaries.
 
