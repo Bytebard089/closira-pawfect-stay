@@ -98,6 +98,12 @@ Runs every required test scenario automatically and saves a transcript for each 
 
 ---
 
+## Video Walkthrough
+
+Google Drive (view-only): https://drive.google.com/drive/folders/1oWIqTfX6gGDLSCQf9iM5Hmi8nMyKOciz?usp=sharing
+
+---
+
 ## The Four Stages
 
 | Stage | What it does |
