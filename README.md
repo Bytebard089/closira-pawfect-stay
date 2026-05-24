@@ -164,7 +164,7 @@ Full session data (entire conversation + summary) is saved per session under `lo
 ## Dependencies
 
 ```
-groq>=0.9.0
+groq==1.2.0
 ```
 
 That's it. No LangChain, no vector databases, no heavy frameworks. The goal was to understand what's actually happening at each step rather than abstracting it away.
