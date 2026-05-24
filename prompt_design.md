@@ -118,6 +118,9 @@ No stale information is baked into any trained weight. If the SOP changes, the n
 **Rule 4 — Out-of-SOP gaps tracked separately from tone escalations**
 The session log tracks `sop_gaps` only when the escalation reason contains gap-specific language ("not covered", "no information", "out of scope"). Angry customer escalations do not pollute the SOP gap list. This distinction makes the gap data actionable rather than noisy.
 
+**No hard-coded topic list**
+The system does not rely on hard-coded keyword lists to force escalation. Instead, the prompt and `ESCALATE:` output format are the single source of truth, so any out-of-SOP topic is handled consistently.
+
 ---
 
 ## 6. Escalation Design
@@ -131,7 +134,7 @@ This approach was chosen over a secondary sentiment classifier because:
 - The logic is transparent and debuggable
 
 **Escalation state across a session**
-Each session maintains `escalation_reasons` (a list — all escalations preserved) and `escalation_shown` (a boolean — whether the customer notice has been displayed). These are separate. After showing the notice once, `escalated` resets so the loop continues, but the reasons list is never cleared. The session summary and log reflect every escalation that occurred.
+Each session maintains `escalation_reasons` (a list — all escalations preserved) and `escalation_notice_count` (an integer — how many escalation notices have been shown). The chat loop shows a notice whenever the count of escalation reasons increases. The reasons list is never cleared, and the session summary/log reflect every escalation.
 
 **`low_confidence_turns`**
 Every turn number where the model escalated is stored in `low_confidence_turns`. This gives the human team a turn-by-turn signal about where the AI struggled, without requiring any extra inference.
@@ -155,7 +158,9 @@ Every turn number where the model escalated is stored in `low_confidence_turns`.
 Every API call goes through `call_with_retry()` in `utils.py`:
 
 ```python
-def call_with_retry(fn, retries=3):
+from typing import Callable, Optional, Tuple
+
+def call_with_retry(fn: Callable[[], object], retries: int = 3) -> Tuple[object, Optional[str]]:
     for attempt in range(retries):
         try:
             return fn(), None
