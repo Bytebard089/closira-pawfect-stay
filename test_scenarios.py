@@ -14,7 +14,7 @@ import datetime
 from groq import Groq
 
 from prompt import SYSTEM_PROMPT
-from utils import call_with_retry, parse_reply
+from utils import call_with_retry, parse_reply, forced_escalation_reason, FORCED_ESCALATION_MESSAGE
 
 TRANSCRIPT_DIR = "test_transcripts"
 MODEL          = "llama-3.3-70b-versatile"
@@ -65,6 +65,15 @@ def simulate(name: str, turns: list) -> str:
 
         # ── Always parse — never write raw reply to transcript ──
         is_escalation, reason, clean_reply = parse_reply(raw)
+
+        # Force escalation for known out-of-scope topics if the model did not
+        # follow the rule.
+        if not is_escalation:
+            forced_reason = forced_escalation_reason(content)
+            if forced_reason:
+                is_escalation = True
+                reason = forced_reason
+                clean_reply = FORCED_ESCALATION_MESSAGE
 
         messages.append({"role": "assistant", "content": clean_reply})
         lines.append(f"**Biscuit:** {clean_reply}")
