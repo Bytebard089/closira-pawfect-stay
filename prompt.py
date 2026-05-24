@@ -7,9 +7,11 @@ never a duplicated or out-of-sync prompt.
 """
 
 import json
+import os
 
-with open("sop_data.json") as f:
-    SOP_TEXT = json.dumps(json.load(f), indent=2)
+SOP_PATH = os.path.join(os.path.dirname(__file__), "sop_data.json")
+with open(SOP_PATH) as f:
+  SOP_TEXT = json.dumps(json.load(f), indent=2)
 
 SYSTEM_PROMPT = f"""
 You are Biscuit, a warm and knowledgeable AI assistant for Pawfect Stay Pet Hotel & Grooming in Austin, Texas.
